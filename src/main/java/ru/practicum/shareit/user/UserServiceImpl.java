@@ -20,11 +20,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto create(UserDto userDto) {
         validateUser(userDto);
-        if (userRepository.existsByEmail(userDto.getEmail())) {
-            throw new EmailAlreadyExistsException(
-                    "Пользователь с email " + userDto.getEmail() + " уже существует"
-            );
-        }
+        checkEmailExists(userDto.getEmail());
         User user = UserMapper.toUser(userDto);
         return UserMapper.toUserDto(userRepository.save(user));
     }
@@ -35,11 +31,8 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
 
         if (userDto.getEmail() != null && !userDto.getEmail().isBlank()) {
-            if (!existing.getEmail().equalsIgnoreCase(userDto.getEmail())
-                    && userRepository.existsByEmail(userDto.getEmail())) {
-                throw new EmailAlreadyExistsException(
-                        "Пользователь с email " + userDto.getEmail() + " уже существует"
-                );
+            if (!existing.getEmail().equalsIgnoreCase(userDto.getEmail())) {
+                checkEmailExists(userDto.getEmail());
             }
             existing.setEmail(userDto.getEmail());
         }
@@ -68,6 +61,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public void delete(Long userId) {
         userRepository.deleteById(userId);
+    }
+
+    private void checkEmailExists(String email) {
+        if (userRepository.existsByEmail(email)) {
+            throw new EmailAlreadyExistsException(
+                    "Пользователь с email " + email + " уже существует"
+            );
+        }
     }
 
     private void validateUser(UserDto dto) {

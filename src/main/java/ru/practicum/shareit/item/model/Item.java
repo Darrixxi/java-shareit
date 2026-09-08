@@ -1,16 +1,21 @@
 package ru.practicum.shareit.item.model;
 
-import ru.practicum.shareit.request.ItemRequest;
-import ru.practicum.shareit.user.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.user.User;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Item {
+
+    @EqualsAndHashCode.Include
     private Long id;
+
     private String name;
     private String description;
     private Boolean available;
