@@ -7,10 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ItemDto {
+public class ItemShortDto {
     private Long id;
     private String name;
-    private String description;
-    private Boolean available;
-    private Long requestId;
 }
