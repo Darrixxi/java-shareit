@@ -27,4 +27,10 @@ public class GlobalExceptionHandler {
     public Map<String, String> handleNotFound(NotFoundException e) {
         return Map.of("error", e.getMessage());
     }
+
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, String> handleForbidden(ForbiddenException e) {
+        return Map.of("error", e.getMessage());
+    }
 }

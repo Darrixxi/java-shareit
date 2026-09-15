@@ -34,8 +34,8 @@ class ItemControllerTest {
 
     @Test
     void createItem_shouldReturn200() throws Exception {
-        ItemDto itemDto = new ItemDto(null, "Дрель", "Мощная", true, null);
-        ItemDto savedItem = new ItemDto(1L, "Дрель", "Мощная", true, null);
+        ItemDto itemDto = new ItemDto(null, "Дрель", "Мощная", true, null, null, null, null);
+        ItemDto savedItem = new ItemDto(1L, "Дрель", "Мощная", true, null, null, null, null);
 
         when(itemService.create(eq(1L), any(ItemDto.class))).thenReturn(savedItem);
 
