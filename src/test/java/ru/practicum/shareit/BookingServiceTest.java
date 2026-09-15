@@ -41,7 +41,7 @@ class BookingServiceTest {
     @Test
     void create_unavailableItem_shouldThrowException() {
         User booker = new User(1L, "Ivan", "i@t.ru");
-        Item item = new Item(1L, "Дрель", "Мощная", false, booker, null); // available = false!
+        Item item = new Item(1L, "Дрель", "Мощная", false, booker, null);
         BookingCreateDto dto = new BookingCreateDto(1L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2));
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(booker));
@@ -59,7 +59,6 @@ class BookingServiceTest {
 
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
 
-        // Пользователь 99 пытается подтвердить (он не владелец)
         assertThrows(ForbiddenException.class, () -> bookingService.approve(99L, 1L, true));
     }
 }
