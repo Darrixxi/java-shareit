@@ -32,6 +32,10 @@ public class BookingServiceImpl implements BookingService {
         Item item = itemRepository.findById(bookingDto.getItemId())
                 .orElseThrow(() -> new NotFoundException("Вещь с id=" + bookingDto.getItemId() + " не найдена"));
 
+        if (item.getOwner().getId().equals(bookerId)) {
+            throw new ValidationException("Нельзя забронировать собственную вещь");
+        }
+
         if (!item.getAvailable()) {
             throw new ValidationException("Вещь недоступна для бронирования");
         }
@@ -88,32 +92,32 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public List<BookingDto> getAllByBooker(Long bookerId, String state) {
         getUserById(bookerId);
+        State stateEnum = parseState(state);
+        LocalDateTime now = LocalDateTime.now();
 
-        List<Booking> bookings = bookingRepository.findAllByBookerIdOrderByStartDesc(bookerId);
-        return filterAndMapBookings(bookings, state);
+        List<Booking> bookings = findBookingsByBookerAndState(bookerId, stateEnum, now);
+
+        return bookings.stream()
+                .map(BookingMapper::toBookingDto)
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<BookingDto> getAllByOwner(Long ownerId, String state) {
         getUserById(ownerId);
+        State stateEnum = parseState(state);
+        LocalDateTime now = LocalDateTime.now();
 
-        List<Booking> bookings = bookingRepository.findAllByItemOwnerIdOrderByStartDesc(ownerId);
-        return filterAndMapBookings(bookings, state);
+        List<Booking> bookings = findBookingsByOwnerAndState(ownerId, stateEnum, now);
+
+        return bookings.stream()
+                .map(BookingMapper::toBookingDto)
+                .collect(Collectors.toList());
     }
 
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
-    }
-
-    private List<BookingDto> filterAndMapBookings(List<Booking> bookings, String state) {
-        State stateEnum = parseState(state);
-        LocalDateTime now = LocalDateTime.now();
-
-        return bookings.stream()
-                .filter(booking -> matchesState(booking, stateEnum, now))
-                .map(BookingMapper::toBookingDto)
-                .collect(Collectors.toList());
     }
 
     private State parseState(String state) {
@@ -124,23 +128,39 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private boolean matchesState(Booking booking, State state, LocalDateTime now) {
+    private List<Booking> findBookingsByBookerAndState(Long bookerId, State state, LocalDateTime now) {
         switch (state) {
             case CURRENT:
-                return booking.getStatus() == BookingStatus.APPROVED
-                        && booking.getStart().isBefore(now)
-                        && booking.getEnd().isAfter(now);
+                return bookingRepository.findCurrentByBookerId(bookerId, now);
             case PAST:
-                return booking.getEnd().isBefore(now);
+                return bookingRepository.findPastByBookerId(bookerId, now);
             case FUTURE:
-                return booking.getStart().isAfter(now);
+                return bookingRepository.findFutureByBookerId(bookerId, now);
             case WAITING:
-                return booking.getStatus() == BookingStatus.WAITING;
+                return bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.WAITING);
             case REJECTED:
-                return booking.getStatus() == BookingStatus.REJECTED;
+                return bookingRepository.findAllByBookerIdAndStatusOrderByStartDesc(bookerId, BookingStatus.REJECTED);
             case ALL:
             default:
-                return true;
+                return bookingRepository.findAllByBookerIdOrderByStartDesc(bookerId);
+        }
+    }
+
+    private List<Booking> findBookingsByOwnerAndState(Long ownerId, State state, LocalDateTime now) {
+        switch (state) {
+            case CURRENT:
+                return bookingRepository.findCurrentByItemOwnerId(ownerId, now);
+            case PAST:
+                return bookingRepository.findPastByItemOwnerId(ownerId, now);
+            case FUTURE:
+                return bookingRepository.findFutureByItemOwnerId(ownerId, now);
+            case WAITING:
+                return bookingRepository.findAllByItemOwnerIdAndStatusOrderByStartDesc(ownerId, BookingStatus.WAITING);
+            case REJECTED:
+                return bookingRepository.findAllByItemOwnerIdAndStatusOrderByStartDesc(ownerId, BookingStatus.REJECTED);
+            case ALL:
+            default:
+                return bookingRepository.findAllByItemOwnerIdOrderByStartDesc(ownerId);
         }
     }
 }

@@ -2,6 +2,7 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
@@ -94,7 +95,7 @@ public class ItemServiceImpl implements ItemService {
     public ItemDto findById(Long userId, Long itemId) {
         Item item = getItemById(itemId);
         List<Comment> comments = commentRepository.findAllByItemId(itemId);
-        return ItemMapper.toItemDto(item, comments);
+        return mapToItemDtoWithBookings(item, comments);
     }
 
     @Override
@@ -113,7 +114,7 @@ public class ItemServiceImpl implements ItemService {
                 .collect(Collectors.groupingBy(c -> c.getItem().getId()));
 
         return items.stream()
-                .map(item -> ItemMapper.toItemDto(item, commentsByItem.getOrDefault(item.getId(), List.of())))
+                .map(item -> mapToItemDtoWithBookings(item, commentsByItem.getOrDefault(item.getId(), List.of())))
                 .collect(Collectors.toList());
     }
 
@@ -128,12 +129,8 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private boolean hasPastApprovedBooking(Long userId, Long itemId, LocalDateTime now) {
-        return bookingRepository.findAllByBookerIdOrderByStartDesc(userId).stream()
-                .anyMatch(booking ->
-                        booking.getItem().getId().equals(itemId) &&
-                                booking.getStatus() == BookingStatus.APPROVED &&
-                                booking.getEnd().isBefore(now)
-                );
+        return bookingRepository.existsByBookerIdAndItemIdAndStatusAndEndBefore(
+                userId, itemId, BookingStatus.APPROVED, now);
     }
 
     private void validateItem(ItemDto dto) {
@@ -142,5 +139,35 @@ public class ItemServiceImpl implements ItemService {
                 dto.getAvailable() == null) {
             throw new ValidationException("Некорректные данные вещи");
         }
+    }
+
+    private ItemDto mapToItemDtoWithBookings(Item item, List<Comment> comments) {
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime lastBooking = bookingRepository
+                .findCurrentByItemId(item.getId(), now)
+                .map(Booking::getStart)
+                .orElse(null);
+
+        LocalDateTime nextBooking = bookingRepository
+                .findTop1ByItemIdAndStartGreaterThanEqualAndStatusOrderByStartAsc(
+                        item.getId(), now, BookingStatus.APPROVED)
+                .map(Booking::getStart)
+                .orElse(null);
+
+        List<CommentDto> commentDtos = comments.stream()
+                .map(CommentMapper::toCommentDto)
+                .collect(Collectors.toList());
+
+        return new ItemDto(
+                item.getId(),
+                item.getName(),
+                item.getDescription(),
+                item.getAvailable(),
+                item.getRequest() != null ? item.getRequest().getId() : null,
+                lastBooking,
+                nextBooking,
+                commentDtos
+        );
     }
 }
