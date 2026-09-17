@@ -21,14 +21,15 @@ public class UserServiceImpl implements UserService {
     public UserDto create(UserDto userDto) {
         validateUser(userDto);
         checkEmailExists(userDto.getEmail());
+
         User user = UserMapper.toUser(userDto);
-        return UserMapper.toUserDto(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        return UserMapper.toUserDto(savedUser);
     }
 
     @Override
     public UserDto update(Long userId, UserDto userDto) {
-        User existing = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
+        User existing = getUserById(userId);
 
         if (userDto.getEmail() != null && !userDto.getEmail().isBlank()) {
             if (!existing.getEmail().equalsIgnoreCase(userDto.getEmail())) {
@@ -41,13 +42,13 @@ public class UserServiceImpl implements UserService {
             existing.setName(userDto.getName());
         }
 
-        return UserMapper.toUserDto(userRepository.save(existing));
+        User updatedUser = userRepository.save(existing);
+        return UserMapper.toUserDto(updatedUser);
     }
 
     @Override
     public UserDto findById(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
+        User user = getUserById(userId);
         return UserMapper.toUserDto(user);
     }
 
@@ -63,23 +64,21 @@ public class UserServiceImpl implements UserService {
         userRepository.deleteById(userId);
     }
 
+    private User getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
+    }
+
     private void checkEmailExists(String email) {
         if (userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyExistsException(
-                    "Пользователь с email " + email + " уже существует"
-            );
+            throw new EmailAlreadyExistsException("Пользователь с email " + email + " уже существует");
         }
     }
 
     private void validateUser(UserDto dto) {
-        if (dto == null) {
-            throw new ValidationException("Тело запроса не может быть пустым");
-        }
-        if (dto.getName() == null || dto.getName().isBlank()) {
-            throw new ValidationException("Имя не может быть пустым");
-        }
-        if (dto.getEmail() == null || dto.getEmail().isBlank() || !dto.getEmail().contains("@")) {
-            throw new ValidationException("Email некорректен");
+        if (dto == null || dto.getName() == null || dto.getName().isBlank() ||
+                dto.getEmail() == null || dto.getEmail().isBlank() || !dto.getEmail().contains("@")) {
+            throw new ValidationException("Некорректные данные пользователя");
         }
     }
 }
