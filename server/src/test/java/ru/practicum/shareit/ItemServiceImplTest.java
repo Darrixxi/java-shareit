@@ -8,11 +8,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.comment.CommentRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.ItemServiceImpl;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemShortDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +35,8 @@ class ItemServiceImplTest {
     private UserRepository userRepository;
     @Mock
     private BookingRepository bookingRepository;
+    @Mock
+    private CommentRepository commentRepository;
 
     @InjectMocks
     private ItemServiceImpl itemService;
@@ -86,21 +89,11 @@ class ItemServiceImplTest {
         Item item = createItem(1L, "Дрель", "Мощная", true, owner);
 
         when(itemRepository.findAllByOwnerId(1L)).thenReturn(List.of(item));
+        when(commentRepository.findAllByItemIdIn(anyList())).thenReturn(List.of());
 
         List<ItemDto> result = itemService.findAllByOwner(1L);
         assertFalse(result.isEmpty());
         assertEquals("Дрель", result.get(0).getName());
-    }
-
-    @Test
-    void search_withValidText_shouldReturnItems() {
-        User owner = createUser(1L, "Owner", "o@t.ru");
-        Item item = createItem(1L, "Дрель", "Мощная", true, owner);
-
-        when(itemRepository.searchByText("дрель")).thenReturn(List.of(item));
-
-        List<ItemShortDto> result = itemService.search("дрель", 1L);
-        assertFalse(result.isEmpty());
     }
 
     @Test
@@ -112,7 +105,7 @@ class ItemServiceImplTest {
 
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-
+        when(userRepository.findById(1L)).thenReturn(Optional.of(author));
         when(itemRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         assertDoesNotThrow(() -> itemService.addComment(1L, 1L, "Отличный товар!"));

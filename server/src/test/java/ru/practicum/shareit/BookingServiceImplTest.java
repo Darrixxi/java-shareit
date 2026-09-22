@@ -10,8 +10,10 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingServiceImpl;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.ForbiddenException;
+import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +28,10 @@ class BookingServiceImplTest {
 
     @Mock
     private BookingRepository bookingRepository;
+    @Mock
+    private ItemRepository itemRepository;
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private BookingServiceImpl bookingService;
@@ -93,7 +99,8 @@ class BookingServiceImplTest {
 
         when(bookingRepository.findAllByBookerIdOrderByStartDesc(1L)).thenReturn(List.of(booking));
 
-        var result = bookingService.getAllByOwner(1L, "ALL");
+        var result = bookingService.getAllByBooker(1L, "ALL");
+
         assertFalse(result.isEmpty());
     }
 }
