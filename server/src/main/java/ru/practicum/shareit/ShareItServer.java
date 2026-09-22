@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ShareItServerApplication {
+public class ShareItServer {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ShareItServerApplication.class, args);
+		SpringApplication.run(ShareItServer.class, args);
 	}
 
 }
