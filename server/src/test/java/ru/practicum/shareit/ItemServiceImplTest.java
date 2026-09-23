@@ -233,4 +233,37 @@ class ItemServiceImplTest {
         assertEquals("СтароеОписание", result.getDescription());
         assertTrue(result.getAvailable());
     }
+
+    @Test
+    void create_withNonExistentRequestId_shouldThrowNotFoundException() {
+        User owner = createUser(1L, "Owner", "o@t.ru");
+        ItemDto dto = new ItemDto(null, "Дрель", "Мощная", true, 99L, null, null, null);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
+        when(requestRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> itemService.create(1L, dto));
+    }
+
+    @Test
+    void search_withBlankText_shouldReturnEmptyList() {
+        List<ItemShortDto> result = itemService.search("   ", 1L);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void update_shouldUpdateOnlyAvailable() {
+        User owner = createUser(1L, "Owner", "o@t.ru");
+        Item existing = createItem(1L, "Дрель", "Мощная", true, owner);
+        ItemDto dto = new ItemDto(null, null, null, false, null, null, null, null);
+
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(itemRepository.save(any(Item.class))).thenAnswer(i -> i.getArgument(0));
+
+        ItemDto result = itemService.update(1L, 1L, dto);
+
+        assertEquals("Дрель", result.getName());
+        assertEquals("Мощная", result.getDescription());
+        assertFalse(result.getAvailable());
+    }
 }

@@ -200,4 +200,45 @@ class BookingServiceImplTest {
 
         assertThrows(ValidationException.class, () -> bookingService.create(1L, dto));
     }
+
+    @Test
+    void approve_alreadyProcessed_shouldThrowValidationException() {
+        User owner = createUser(1L, "Owner", "o@t.ru");
+        User booker = createUser(2L, "Booker", "b@t.ru");
+        Item item = createItem(1L, "Дрель", true, owner);
+        Booking booking = createBooking(1L, item, booker, BookingStatus.APPROVED);
+
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(owner));
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+
+        assertThrows(ValidationException.class, () -> bookingService.approve(1L, 1L, true));
+    }
+
+    @Test
+    void getBooking_byUnauthorizedUser_shouldThrowNotFoundException() {
+        User owner = createUser(1L, "Owner", "o@t.ru");
+        User booker = createUser(2L, "Booker", "b@t.ru");
+        User stranger = createUser(3L, "Stranger", "s@t.ru");
+        Item item = createItem(1L, "Дрель", true, owner);
+        Booking booking = createBooking(1L, item, booker, BookingStatus.WAITING);
+
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(stranger));
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+
+        assertThrows(NotFoundException.class, () -> bookingService.getById(3L, 1L));
+    }
+
+    @Test
+    void create_startEqualsEnd_shouldThrowValidationException() {
+        User booker = createUser(1L, "Booker", "b@t.ru");
+        User owner = createUser(2L, "Owner", "o@t.ru");
+        Item item = createItem(1L, "Дрель", true, owner);
+        LocalDateTime sameTime = LocalDateTime.now().plusDays(1);
+        BookingCreateDto dto = new BookingCreateDto(1L, sameTime, sameTime);
+
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        assertThrows(ValidationException.class, () -> bookingService.create(1L, dto));
+    }
 }
