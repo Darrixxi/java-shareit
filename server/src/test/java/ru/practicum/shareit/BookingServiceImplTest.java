@@ -10,7 +10,6 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingServiceImpl;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.ForbiddenException;
-import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
@@ -28,8 +27,6 @@ class BookingServiceImplTest {
 
     @Mock
     private BookingRepository bookingRepository;
-    @Mock
-    private ItemRepository itemRepository;
     @Mock
     private UserRepository userRepository;
 
@@ -97,6 +94,7 @@ class BookingServiceImplTest {
         Item item = createItem(1L, "Дрель", true, owner);
         Booking booking = createBooking(1L, item, booker, BookingStatus.WAITING);
 
+        when(userRepository.findById(1L)).thenReturn(Optional.of(booker));
         when(bookingRepository.findAllByBookerIdOrderByStartDesc(1L)).thenReturn(List.of(booking));
 
         var result = bookingService.getAllByBooker(1L, "ALL");

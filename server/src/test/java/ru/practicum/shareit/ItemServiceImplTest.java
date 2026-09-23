@@ -5,9 +5,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.comment.Comment;
 import ru.practicum.shareit.comment.CommentRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.ItemRepository;
@@ -24,6 +24,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,17 +60,6 @@ class ItemServiceImplTest {
         return i;
     }
 
-    private Booking createBooking(Long id, Item item, User booker, BookingStatus status) {
-        Booking b = new Booking();
-        b.setId(id);
-        b.setItem(item);
-        b.setBooker(booker);
-        b.setStatus(status);
-        b.setStart(LocalDateTime.now());
-        b.setEnd(LocalDateTime.now().plusDays(1));
-        return b;
-    }
-
     @Test
     void create_shouldSaveAndReturnItem() {
         User owner = createUser(1L, "Owner", "o@t.ru");
@@ -101,12 +91,22 @@ class ItemServiceImplTest {
         User author = createUser(1L, "Author", "a@t.ru");
         User owner = createUser(2L, "Owner", "o@t.ru");
         Item item = createItem(1L, "Дрель", "Мощная", true, owner);
-        Booking booking = createBooking(1L, item, author, BookingStatus.APPROVED);
 
-        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        lenient().when(bookingRepository.existsByBookerIdAndItemIdAndStatusAndEndBefore(
+                any(Long.class),
+                any(Long.class),
+                any(BookingStatus.class),
+                any(LocalDateTime.class)
+        )).thenReturn(true);
+
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(userRepository.findById(1L)).thenReturn(Optional.of(author));
-        when(itemRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            comment.setId(1L);
+            return comment;
+        });
 
         assertDoesNotThrow(() -> itemService.addComment(1L, 1L, "Отличный товар!"));
     }
