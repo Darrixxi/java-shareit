@@ -97,19 +97,6 @@ class BookingServiceImplTest {
     }
 
     @Test
-    void create_itemNotAvailable_shouldThrowValidationException() {
-        User booker = createUser(1L, "Booker", "b@t.ru");
-        User owner = createUser(2L, "Owner", "o@t.ru");
-        Item item = createItem(1L, "Дрель", false, owner);
-        BookingCreateDto dto = new BookingCreateDto(1L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2));
-
-        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(booker));
-        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-
-        assertThrows(ValidationException.class, () -> bookingService.create(1L, dto));
-    }
-
-    @Test
     void create_invalidDates_shouldThrowValidationException() {
         User booker = createUser(1L, "Booker", "b@t.ru");
         User owner = createUser(2L, "Owner", "o@t.ru");
@@ -186,5 +173,31 @@ class BookingServiceImplTest {
 
         var result = bookingService.getAllByOwner(1L, "ALL");
         assertFalse(result.isEmpty());
+    }
+
+    @Test
+    void create_itemNotAvailable_shouldThrowValidationException() {
+        User booker = createUser(1L, "Booker", "b@t.ru");
+        User owner = createUser(2L, "Owner", "o@t.ru");
+        Item item = createItem(1L, "Дрель", false, owner);
+        BookingCreateDto dto = new BookingCreateDto(1L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2));
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        assertThrows(ValidationException.class, () -> bookingService.create(1L, dto));
+    }
+
+    @Test
+    void create_bookingOwnItem_shouldThrowValidationException() {
+        User ownerAndBooker = createUser(1L, "Owner", "o@t.ru");
+        Item item = createItem(1L, "Дрель", true, ownerAndBooker);
+
+        BookingCreateDto dto = new BookingCreateDto(1L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2));
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(ownerAndBooker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        assertThrows(ValidationException.class, () -> bookingService.create(1L, dto));
     }
 }

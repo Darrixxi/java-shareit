@@ -198,4 +198,36 @@ class ItemServiceImplTest {
         when(itemRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> itemService.findById(1L, 99L));
     }
+
+    @Test
+    void update_shouldUpdateOnlyDescription() {
+        User owner = createUser(1L, "Owner", "o@t.ru");
+        Item existing = createItem(1L, "Дрель", "Старое описание", true, owner);
+        ItemDto dto = new ItemDto(null, null, "Новое описание", null, null, null, null, null);
+
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(itemRepository.save(any(Item.class))).thenAnswer(i -> i.getArgument(0));
+
+        ItemDto result = itemService.update(1L, 1L, dto);
+        assertEquals("Дрель", result.getName());
+        assertEquals("Новое описание", result.getDescription());
+        assertTrue(result.getAvailable());
+    }
+
+    @Test
+    void update_shouldUpdateOnlyName() {
+        User owner = createUser(1L, "Owner", "o@t.ru");
+        Item existing = createItem(1L, "СтароеИмя", "СтароеОписание", true, owner);
+
+        ItemDto dto = new ItemDto(null, "НовоеИмя", null, null, null, null, null, null);
+
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(itemRepository.save(any(Item.class))).thenAnswer(i -> i.getArgument(0));
+
+        ItemDto result = itemService.update(1L, 1L, dto);
+
+        assertEquals("НовоеИмя", result.getName());
+        assertEquals("СтароеОписание", result.getDescription());
+        assertTrue(result.getAvailable());
+    }
 }
