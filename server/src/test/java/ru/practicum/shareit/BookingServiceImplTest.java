@@ -250,4 +250,13 @@ class BookingServiceImplTest {
 
         assertThrows(NotFoundException.class, () -> bookingService.create(1L, dto));
     }
+
+    @Test
+    void getAllByBooker_invalidState_shouldThrowValidationException() {
+        User booker = new User();
+        booker.setId(1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(booker));
+
+        assertThrows(ValidationException.class, () -> bookingService.getAllByBooker(1L, "INVALID_STATE"));
+    }
 }

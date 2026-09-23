@@ -13,6 +13,7 @@ import ru.practicum.shareit.user.UserRepository;
 import ru.practicum.shareit.user.UserServiceImpl;
 import ru.practicum.shareit.user.dto.UserDto;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -135,5 +136,23 @@ class UserServiceImplTest {
         UserDto result = userService.update(1L, updateDto);
         assertEquals("New Name", result.getName());
         assertEquals("old@t.ru", result.getEmail());
+    }
+
+    @Test
+    void findAll_shouldReturnListOfUsers() {
+        User user = new User();
+        user.setId(1L);
+        user.setName("Test");
+        user.setEmail("test@t.ru");
+        when(userRepository.findAll()).thenReturn(List.of(user));
+
+        var result = userService.findAll();
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void deleteUser_shouldCallRepository() {
+        userService.delete(1L);
+        org.mockito.Mockito.verify(userRepository).deleteById(1L);
     }
 }
