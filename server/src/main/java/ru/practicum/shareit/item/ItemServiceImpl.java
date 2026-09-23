@@ -155,7 +155,7 @@ public class ItemServiceImpl implements ItemService {
         LocalDateTime now = LocalDateTime.now();
 
         LocalDateTime lastBooking = bookingRepository
-                .findFirstByItemIdAndStartLessThanEqualOrderByStartDesc(item.getId(), now)
+                .findFirstByItemIdAndEndLessThanOrderByStartDesc(item.getId(), now)
                 .map(Booking::getStart)
                 .orElse(null);
 

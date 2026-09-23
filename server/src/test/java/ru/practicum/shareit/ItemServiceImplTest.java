@@ -162,7 +162,7 @@ class ItemServiceImplTest {
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(commentRepository.findAllByItemId(1L)).thenReturn(List.of(comment));
 
-        when(bookingRepository.findFirstByItemIdAndStartLessThanEqualOrderByStartDesc(eq(1L), any()))
+        when(bookingRepository.findFirstByItemIdAndEndLessThanOrderByStartDesc(eq(1L), any()))
                 .thenReturn(Optional.empty());
         when(bookingRepository.findFirstByItemIdAndStartGreaterThanOrderByStartAsc(eq(1L), any()))
                 .thenReturn(Optional.empty());

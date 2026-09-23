@@ -58,7 +58,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "ORDER BY b.start DESC")
     Optional<Booking> findCurrentByItemId(Long itemId, LocalDateTime now);
 
-    Optional<Booking> findFirstByItemIdAndStartLessThanEqualOrderByStartDesc(Long itemId, LocalDateTime now);
+    Optional<Booking> findFirstByItemIdAndEndLessThanOrderByStartDesc(Long itemId, LocalDateTime now);
 
     Optional<Booking> findFirstByItemIdAndStartGreaterThanOrderByStartAsc(Long itemId, LocalDateTime now);
 }
