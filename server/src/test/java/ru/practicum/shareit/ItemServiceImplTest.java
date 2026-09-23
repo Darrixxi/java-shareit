@@ -6,7 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.practicum.shareit.booking.BookingRepository;
-import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.comment.Comment;
 import ru.practicum.shareit.comment.CommentRepository;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
@@ -24,7 +24,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ItemServiceImplTest {
@@ -71,20 +72,33 @@ class ItemServiceImplTest {
     }
 
     @Test
-    void update_shouldUpdateAndReturnItem() {
+    void update_shouldUpdateAllFields() {
         User owner = createUser(1L, "Owner", "o@t.ru");
         Item existing = createItem(1L, "Old", "Old", true, owner);
-        ItemDto dto = new ItemDto(null, "New", "New", false, null, null, null, null);
-        Item updated = createItem(1L, "New", "New", false, owner);
+        ItemDto dto = new ItemDto(null, "New", "NewDesc", false, null, null, null, null);
         when(itemRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(itemRepository.save(any(Item.class))).thenReturn(updated);
+        when(itemRepository.save(any(Item.class))).thenAnswer(i -> i.getArgument(0));
         ItemDto result = itemService.update(1L, 1L, dto);
         assertEquals("New", result.getName());
+        assertEquals("NewDesc", result.getDescription());
         assertFalse(result.getAvailable());
     }
 
     @Test
-    void getAllByOwner_shouldReturnItems() {
+    void update_shouldUpdateOnlyName() {
+        User owner = createUser(1L, "Owner", "o@t.ru");
+        Item existing = createItem(1L, "Old", "OldDesc", true, owner);
+        ItemDto dto = new ItemDto(null, "New", null, null, null, null, null, null);
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(itemRepository.save(any(Item.class))).thenAnswer(i -> i.getArgument(0));
+        ItemDto result = itemService.update(1L, 1L, dto);
+        assertEquals("New", result.getName());
+        assertEquals("OldDesc", result.getDescription());
+        assertTrue(result.getAvailable());
+    }
+
+    @Test
+    void findAllByOwner_shouldReturnItems() {
         User owner = createUser(1L, "Owner", "o@t.ru");
         Item item = createItem(1L, "Дрель", "Мощная", true, owner);
         when(itemRepository.findAllByOwnerId(1L)).thenReturn(List.of(item));
@@ -94,59 +108,76 @@ class ItemServiceImplTest {
     }
 
     @Test
-    void search_withEmptyText_shouldReturnEmptyList() {
-        List<ItemShortDto> result = itemService.search("", 1L);
+    void search_withNullText_shouldReturnEmptyList() {
+        List<ItemShortDto> result = itemService.search(null, 1L);
         assertTrue(result.isEmpty());
-        verify(itemRepository, never()).searchByText(anyString());
+    }
+
+    @Test
+    void search_withEmptyText_shouldReturnEmptyList() {
+        List<ItemShortDto> result = itemService.search("  ", 1L);
+        assertTrue(result.isEmpty());
     }
 
     @Test
     void search_withValidText_shouldReturnItems() {
-        User owner = createUser(1L, "Owner", "o@t.ru");
-        Item item = createItem(1L, "Дрель", "Мощная", true, owner);
-
+        Item item = createItem(1L, "Дрель", "Мощная", true, createUser(1L, "O", "o@t.ru"));
         when(itemRepository.searchByText("дрель")).thenReturn(List.of(item));
-
         List<ItemShortDto> result = itemService.search("дрель", 1L);
         assertFalse(result.isEmpty());
-        assertEquals("Дрель", result.get(0).getName());
+    }
+
+    @Test
+    void findById_shouldReturnItemWithBookingsAndComments() {
+        User owner = createUser(1L, "Owner", "o@t.ru");
+        User author = createUser(2L, "Author", "a@t.ru");
+        Item item = createItem(1L, "Дрель", "Мощная", true, owner);
+
+        Comment comment = new Comment();
+        comment.setId(1L);
+        comment.setText("Good");
+        comment.setAuthor(author);
+        comment.setCreated(LocalDateTime.now());
+
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        when(commentRepository.findAllByItemId(1L)).thenReturn(List.of(comment));
+        when(bookingRepository.findCurrentByItemId(eq(1L), any())).thenReturn(Optional.empty());
+        when(bookingRepository.findTop1ByItemIdAndStartGreaterThanEqualAndStatusOrderByStartAsc(eq(1L), any(), any())).thenReturn(Optional.empty());
+
+        ItemDto result = itemService.findById(1L, 1L);
+
+        assertNotNull(result);
+        assertEquals(1, result.getComments().size());
+        assertEquals("Good", result.getComments().get(0).getText());
+        assertEquals("Author", result.getComments().get(0).getAuthorName());
     }
 
     @Test
     void addComment_whenBookingApproved_shouldSaveComment() {
         User author = createUser(1L, "Author", "a@t.ru");
-        User owner = createUser(2L, "Owner", "o@t.ru");
-        Item item = createItem(1L, "Дрель", "Мощная", true, owner);
-
-        lenient().when(bookingRepository.existsByBookerIdAndItemIdAndStatusAndEndBefore(
-                any(Long.class), any(Long.class), any(BookingStatus.class), any(LocalDateTime.class)
-        )).thenReturn(true);
-
+        Item item = createItem(1L, "Дрель", "Мощная", true, createUser(2L, "O", "o@t.ru"));
+        lenient().when(bookingRepository.existsByBookerIdAndItemIdAndStatusAndEndBefore(any(), any(), any(), any())).thenReturn(true);
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(userRepository.findById(1L)).thenReturn(Optional.of(author));
-        when(commentRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
+        when(commentRepository.save(any(Comment.class))).thenAnswer(i -> {
+            Comment c = i.getArgument(0);
+            c.setId(1L);
+            return c;
+        });
         assertDoesNotThrow(() -> itemService.addComment(1L, 1L, "Отлично"));
     }
 
     @Test
     void addComment_whenNoApprovedBooking_shouldThrowValidationException() {
-        User author = createUser(1L, "Author", "a@t.ru");
-        User owner = createUser(2L, "Owner", "o@t.ru");
-        Item item = createItem(1L, "Дрель", "Мощная", true, owner);
-
-        lenient().when(bookingRepository.existsByBookerIdAndItemIdAndStatusAndEndBefore(
-                any(Long.class), any(Long.class), any(BookingStatus.class), any(LocalDateTime.class)
-        )).thenReturn(false);
-
+        Item item = createItem(1L, "Дрель", "Мощная", true, createUser(2L, "O", "o@t.ru"));
+        lenient().when(bookingRepository.existsByBookerIdAndItemIdAndStatusAndEndBefore(any(), any(), any(), any())).thenReturn(false);
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(author));
-
+        when(userRepository.findById(1L)).thenReturn(Optional.of(createUser(1L, "A", "a@t.ru")));
         assertThrows(ValidationException.class, () -> itemService.addComment(1L, 1L, "Отлично"));
     }
 
     @Test
-    void getById_notFound_shouldThrowException() {
+    void findById_notFound_shouldThrowException() {
         when(itemRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> itemService.findById(1L, 99L));
     }

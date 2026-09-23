@@ -12,6 +12,7 @@ import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.dto.BookingCreateDto;
 import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
@@ -23,6 +24,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,12 +77,49 @@ class BookingServiceImplTest {
         BookingCreateDto dto = new BookingCreateDto(1L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2));
         Booking booking = createBooking(1L, item, booker, BookingStatus.WAITING);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(booker));
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(booker));
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
 
-        var result = bookingService.create(1L, dto);
+        var result = bookingService.create(1L, dto); // или bookItem, если у тебя так
         assertNotNull(result);
+    }
+
+    @Test
+    void create_itemNotFound_shouldThrowNotFoundException() {
+        User booker = createUser(1L, "Booker", "b@t.ru");
+        BookingCreateDto dto = new BookingCreateDto(99L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2));
+
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> bookingService.create(1L, dto));
+    }
+
+    @Test
+    void create_itemNotAvailable_shouldThrowValidationException() {
+        User booker = createUser(1L, "Booker", "b@t.ru");
+        User owner = createUser(2L, "Owner", "o@t.ru");
+        Item item = createItem(1L, "Дрель", false, owner);
+        BookingCreateDto dto = new BookingCreateDto(1L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2));
+
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        assertThrows(ValidationException.class, () -> bookingService.create(1L, dto));
+    }
+
+    @Test
+    void create_invalidDates_shouldThrowValidationException() {
+        User booker = createUser(1L, "Booker", "b@t.ru");
+        User owner = createUser(2L, "Owner", "o@t.ru");
+        Item item = createItem(1L, "Дрель", true, owner);
+        BookingCreateDto dto = new BookingCreateDto(1L, LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(1));
+
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        assertThrows(ValidationException.class, () -> bookingService.create(1L, dto));
     }
 
     @Test
@@ -89,6 +129,7 @@ class BookingServiceImplTest {
         Item item = createItem(1L, "Дрель", true, owner);
         Booking booking = createBooking(1L, item, booker, BookingStatus.WAITING);
 
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(owner));
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
 
@@ -103,7 +144,9 @@ class BookingServiceImplTest {
         Item item = createItem(1L, "Дрель", true, owner);
         Booking booking = createBooking(1L, item, other, BookingStatus.WAITING);
 
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(other));
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+
         assertThrows(ForbiddenException.class, () -> bookingService.approve(99L, 1L, true));
     }
 
@@ -111,8 +154,7 @@ class BookingServiceImplTest {
     void getBooking_notFound_shouldThrowNotFoundException() {
         User user = createUser(1L, "User", "u@t.ru");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
         when(bookingRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> bookingService.getById(1L, 99L));
@@ -125,7 +167,7 @@ class BookingServiceImplTest {
         Item item = createItem(1L, "Дрель", true, owner);
         Booking booking = createBooking(1L, item, booker, BookingStatus.WAITING);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(booker));
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(booker));
         when(bookingRepository.findAllByBookerIdOrderByStartDesc(1L)).thenReturn(List.of(booking));
 
         var result = bookingService.getAllByBooker(1L, "ALL");
@@ -139,7 +181,7 @@ class BookingServiceImplTest {
         Item item = createItem(1L, "Дрель", true, owner);
         Booking booking = createBooking(1L, item, booker, BookingStatus.WAITING);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
+        lenient().when(userRepository.findById(anyLong())).thenReturn(Optional.of(owner));
         when(bookingRepository.findAllByItemOwnerIdOrderByStartDesc(1L)).thenReturn(List.of(booking));
 
         var result = bookingService.getAllByOwner(1L, "ALL");
