@@ -104,4 +104,36 @@ class UserServiceImplTest {
         assertEquals("NewName", result.getName());
         assertEquals("new@test.com", result.getEmail());
     }
+
+    @Test
+    void updateUser_withExistingEmail_shouldThrowEmailAlreadyExistsException() {
+        User existing = new User();
+        existing.setId(1L);
+        existing.setName("Old");
+        existing.setEmail("old@t.ru");
+
+        UserDto updateDto = new UserDto(null, "New Name", "another@t.ru");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(userRepository.existsByEmail("another@t.ru")).thenReturn(true);
+
+        assertThrows(EmailAlreadyExistsException.class, () -> userService.update(1L, updateDto));
+    }
+
+    @Test
+    void updateUser_onlyName() {
+        User existing = new User();
+        existing.setId(1L);
+        existing.setName("Old");
+        existing.setEmail("old@t.ru");
+
+        UserDto updateDto = new UserDto(null, "New Name", null);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        UserDto result = userService.update(1L, updateDto);
+        assertEquals("New Name", result.getName());
+        assertEquals("old@t.ru", result.getEmail());
+    }
 }

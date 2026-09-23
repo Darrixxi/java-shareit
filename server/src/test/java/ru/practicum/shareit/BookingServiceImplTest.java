@@ -241,4 +241,13 @@ class BookingServiceImplTest {
 
         assertThrows(ValidationException.class, () -> bookingService.create(1L, dto));
     }
+
+    @Test
+    void create_userNotFound_shouldThrowNotFoundException() {
+        BookingCreateDto dto = new BookingCreateDto(1L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2));
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> bookingService.create(1L, dto));
+    }
 }

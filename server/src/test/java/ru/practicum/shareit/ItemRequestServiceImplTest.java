@@ -132,4 +132,11 @@ class ItemRequestServiceImplTest {
         when(requestRepository.findById(99L)).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> itemRequestService.getRequestById(1L, 99L));
     }
+
+    @Test
+    void getRequestById_notFound_shouldThrowNotFoundException() {
+        when(requestRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> itemRequestService.getRequestById(1L, 99L));
+    }
 }

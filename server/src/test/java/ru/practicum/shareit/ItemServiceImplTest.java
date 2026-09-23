@@ -266,4 +266,11 @@ class ItemServiceImplTest {
         assertEquals("Мощная", result.getDescription());
         assertFalse(result.getAvailable());
     }
+
+    @Test
+    void create_invalidItemDescription_shouldThrowValidationException() {
+        ItemDto dto = new ItemDto(null, "Дрель", "   ", true, null, null, null, null);
+
+        assertThrows(ValidationException.class, () -> itemService.create(1L, dto));
+    }
 }
