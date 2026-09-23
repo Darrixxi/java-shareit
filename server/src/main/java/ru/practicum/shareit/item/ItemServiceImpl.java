@@ -5,15 +5,15 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.comment.Comment;
 import ru.practicum.shareit.comment.CommentMapper;
 import ru.practicum.shareit.comment.CommentRepository;
+import ru.practicum.shareit.comment.dto.CommentDto;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
-import ru.practicum.shareit.comment.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemShortDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
-import ru.practicum.shareit.comment.Comment;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.User;
@@ -160,7 +160,7 @@ public class ItemServiceImpl implements ItemService {
                 .orElse(null);
 
         LocalDateTime nextBooking = bookingRepository
-                .findFirstByItemIdAndStartGreaterThanEqualOrderByStartAsc(item.getId(), now)
+                .findFirstByItemIdAndStartGreaterThanOrderByStartAsc(item.getId(), now)
                 .map(Booking::getStart)
                 .orElse(null);
 

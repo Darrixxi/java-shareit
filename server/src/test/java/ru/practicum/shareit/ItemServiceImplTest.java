@@ -164,7 +164,7 @@ class ItemServiceImplTest {
 
         when(bookingRepository.findFirstByItemIdAndStartLessThanEqualOrderByStartDesc(eq(1L), any()))
                 .thenReturn(Optional.empty());
-        when(bookingRepository.findFirstByItemIdAndStartGreaterThanEqualOrderByStartAsc(eq(1L), any()))
+        when(bookingRepository.findFirstByItemIdAndStartGreaterThanOrderByStartAsc(eq(1L), any()))
                 .thenReturn(Optional.empty());
 
         ItemDto result = itemService.findById(1L, 1L);
