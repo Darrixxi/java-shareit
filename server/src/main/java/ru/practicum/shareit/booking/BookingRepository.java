@@ -57,4 +57,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "AND b.status = 'APPROVED' AND b.start <= :now AND b.end >= :now " +
             "ORDER BY b.start DESC")
     Optional<Booking> findCurrentByItemId(Long itemId, LocalDateTime now);
+
+    Optional<Booking> findFirstByItemIdAndStartLessThanEqualOrderByStartDesc(Long itemId, LocalDateTime now);
+
+    Optional<Booking> findFirstByItemIdAndStartGreaterThanEqualOrderByStartAsc(Long itemId, LocalDateTime now);
 }
