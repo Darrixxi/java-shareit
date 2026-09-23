@@ -171,7 +171,7 @@ class ItemServiceImplTest {
         assertNotNull(result);
         assertEquals(1, result.getComments().size());
     }
-    
+
     @Test
     void addComment_whenBookingApproved_shouldSaveComment() {
         User author = createUser(1L, "Author", "a@t.ru");
