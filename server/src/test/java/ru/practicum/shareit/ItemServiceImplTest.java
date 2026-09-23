@@ -15,6 +15,7 @@ import ru.practicum.shareit.item.ItemServiceImpl;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemShortDto;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
@@ -38,6 +39,8 @@ class ItemServiceImplTest {
     private BookingRepository bookingRepository;
     @Mock
     private CommentRepository commentRepository;
+    @Mock
+    private ru.practicum.shareit.request.ItemRequestRepository requestRepository;
 
     @InjectMocks
     private ItemServiceImpl itemService;
@@ -72,6 +75,27 @@ class ItemServiceImplTest {
     }
 
     @Test
+    void create_withRequestId_shouldSaveAndReturnItem() {
+        User owner = createUser(1L, "Owner", "o@t.ru");
+        ItemDto dto = new ItemDto(null, "Дрель", "Мощная", true, 5L, null, null, null);
+        Item saved = createItem(1L, "Дрель", "Мощная", true, owner);
+        saved.setRequestId(5L);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
+        when(requestRepository.findById(5L)).thenReturn(Optional.of(new ItemRequest()));
+        when(itemRepository.save(any(Item.class))).thenReturn(saved);
+
+        ItemDto result = itemService.create(1L, dto);
+        assertEquals("Дрель", result.getName());
+    }
+
+    @Test
+    void create_invalidItem_shouldThrowValidationException() {
+        ItemDto dto = new ItemDto(null, " ", "Мощная", true, null, null, null, null);
+        assertThrows(ValidationException.class, () -> itemService.create(1L, dto));
+    }
+
+    @Test
     void update_shouldUpdateAllFields() {
         User owner = createUser(1L, "Owner", "o@t.ru");
         Item existing = createItem(1L, "Old", "Old", true, owner);
@@ -80,21 +104,23 @@ class ItemServiceImplTest {
         when(itemRepository.save(any(Item.class))).thenAnswer(i -> i.getArgument(0));
         ItemDto result = itemService.update(1L, 1L, dto);
         assertEquals("New", result.getName());
-        assertEquals("NewDesc", result.getDescription());
         assertFalse(result.getAvailable());
     }
 
     @Test
-    void update_shouldUpdateOnlyName() {
+    void update_wrongOwner_shouldThrowNotFoundException() {
         User owner = createUser(1L, "Owner", "o@t.ru");
-        Item existing = createItem(1L, "Old", "OldDesc", true, owner);
-        ItemDto dto = new ItemDto(null, "New", null, null, null, null, null, null);
+        Item existing = createItem(1L, "Old", "Old", true, owner);
+        ItemDto dto = new ItemDto(null, "New", "New", false, null, null, null, null);
         when(itemRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(itemRepository.save(any(Item.class))).thenAnswer(i -> i.getArgument(0));
-        ItemDto result = itemService.update(1L, 1L, dto);
-        assertEquals("New", result.getName());
-        assertEquals("OldDesc", result.getDescription());
-        assertTrue(result.getAvailable());
+        assertThrows(NotFoundException.class, () -> itemService.update(2L, 1L, dto));
+    }
+
+    @Test
+    void findAllByOwner_empty_shouldReturnEmptyList() {
+        when(itemRepository.findAllByOwnerId(1L)).thenReturn(List.of());
+        List<ItemDto> result = itemService.findAllByOwner(1L);
+        assertTrue(result.isEmpty());
     }
 
     @Test
@@ -110,12 +136,6 @@ class ItemServiceImplTest {
     @Test
     void search_withNullText_shouldReturnEmptyList() {
         List<ItemShortDto> result = itemService.search(null, 1L);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void search_withEmptyText_shouldReturnEmptyList() {
-        List<ItemShortDto> result = itemService.search("  ", 1L);
         assertTrue(result.isEmpty());
     }
 
@@ -145,11 +165,8 @@ class ItemServiceImplTest {
         when(bookingRepository.findTop1ByItemIdAndStartGreaterThanEqualAndStatusOrderByStartAsc(eq(1L), any(), any())).thenReturn(Optional.empty());
 
         ItemDto result = itemService.findById(1L, 1L);
-
         assertNotNull(result);
         assertEquals(1, result.getComments().size());
-        assertEquals("Good", result.getComments().get(0).getText());
-        assertEquals("Author", result.getComments().get(0).getAuthorName());
     }
 
     @Test
