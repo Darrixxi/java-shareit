@@ -161,14 +161,16 @@ class ItemServiceImplTest {
 
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(commentRepository.findAllByItemId(1L)).thenReturn(List.of(comment));
-        when(bookingRepository.findCurrentByItemId(eq(1L), any())).thenReturn(Optional.empty());
-        when(bookingRepository.findTop1ByItemIdAndStartGreaterThanEqualAndStatusOrderByStartAsc(eq(1L), any(), any())).thenReturn(Optional.empty());
+
+        when(bookingRepository.findFirstByItemIdAndStartLessThanEqualOrderByStartDesc(eq(1L), any()))
+                .thenReturn(Optional.empty());
+        when(bookingRepository.findFirstByItemIdAndStartGreaterThanEqualOrderByStartAsc(eq(1L), any()))
+                .thenReturn(Optional.empty());
 
         ItemDto result = itemService.findById(1L, 1L);
         assertNotNull(result);
         assertEquals(1, result.getComments().size());
     }
-
     @Test
     void addComment_whenBookingApproved_shouldSaveComment() {
         User author = createUser(1L, "Author", "a@t.ru");
