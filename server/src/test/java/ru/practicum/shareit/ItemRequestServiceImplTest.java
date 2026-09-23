@@ -6,10 +6,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.ItemServiceImpl;
-import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.request.ItemRequestRepository;
@@ -37,9 +35,6 @@ class ItemRequestServiceImplTest {
 
     @InjectMocks
     private ItemRequestServiceImpl itemRequestService;
-
-    @Mock
-    ItemServiceImpl userRepository;
 
     @Test
     void create_shouldSaveAndReturnRequest() {
