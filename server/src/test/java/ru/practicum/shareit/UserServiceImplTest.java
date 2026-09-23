@@ -67,4 +67,19 @@ class UserServiceImplTest {
 
         assertThrows(NotFoundException.class, () -> userService.findById(999L));
     }
+
+    @Test
+    void update_emailAlreadyExists_shouldThrowException() {
+        User existingUser = new User();
+        existingUser.setId(1L);
+        existingUser.setName("Old");
+        existingUser.setEmail("old@test.com");
+
+        UserDto dto = new UserDto(null, "New", "other@test.com");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.existsByEmail("other@test.com")).thenReturn(true);
+
+        assertThrows(EmailAlreadyExistsException.class, () -> userService.update(1L, dto));
+    }
 }

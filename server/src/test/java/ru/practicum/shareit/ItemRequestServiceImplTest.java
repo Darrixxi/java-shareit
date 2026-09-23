@@ -126,4 +126,10 @@ class ItemRequestServiceImplTest {
         assertEquals(1, result.getItems().size());
         assertEquals(2L, result.getItems().get(0).getOwnerId());
     }
+
+    @Test
+    void getRequestById_notFound_shouldThrowException() {
+        when(requestRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> itemRequestService.getRequestById(1L, 99L));
+    }
 }
