@@ -154,8 +154,10 @@ public class ItemServiceImpl implements ItemService {
     private ItemDto mapToItemDtoWithBookings(Item item, List<Comment> comments) {
         LocalDateTime now = LocalDateTime.now();
 
+        LocalDateTime threshold = now.minusSeconds(2);
+
         LocalDateTime lastBooking = bookingRepository
-                .findFirstByItemIdAndEndLessThanOrderByStartDesc(item.getId(), now)
+                .findFirstByItemIdAndEndLessThanOrderByStartDesc(item.getId(), threshold)
                 .map(Booking::getStart)
                 .orElse(null);
 
